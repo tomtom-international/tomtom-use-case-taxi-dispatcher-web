@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Taxi cars dispatcher</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="sdk/map.css"/>
+    <script src="sdk/tomtom.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+      }
+      #map {
+        height: 100vh;
+        width: 100vw;
+      }
+      #submit-button{
+        background: #b6d028 !important;
+        border-radius: 20px !important;
+      }
+      .tomtom-control-panel{
+        border-radius: 0%;
+      }
+      .leaflet-popup-content-wrapper,
+      .leaflet-popup-tip,
+      .tomtom-control-panel {
+        box-shadow: rgba(0, 0, 0, 0.45) 2px 2px 2px 0px;
+      }
+      #labels-container label{
+        line-height: 2;
+        font-size: 1.2em;
+        font-weight: bold;
+      }
+      #labels-container #route-labels div{
+        border-left: 6px solid;
+        padding-left: 5px;
+        margin-top: 3px;
+      }
+      #route-labels div:hover{
+        cursor: pointer;
+        box-shadow: 0px 2px #888888;
+      }
+      #modal {
+        display: none;
+        position: fixed;
+        z-index: 1100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.5);
+      }
+      #modal-content {
+        background-color: lightgray;
+        color: #555;
+        font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        text-align: center;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 20%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map">
+      <div id="labels-container">
+        <label>Find the taxi that will arrive fastest</label>
+        <div id="route-labels"></div>
+        <input type="button" id="submit-button" value="Submit">
+      </div>
+    </div>
+    <div id="modal">
+      <div id="modal-content"></div>
+    </div>
+    <script>
+    var taxiCoordinates = [ [ 52.373627, 4.902642 ], [ 52.3659, 4.927198 ],
+      [ 52.347878, 4.893488 ], [ 52.349447, 4.858433 ] ];
+
+    var passengerInitCoordinates = [ 52.360306, 4.876935 ];
+    var passengerMarker;
+
+    var routes = [];
+    var bestRouteIndex;
+
+    var config;
+    var routeLabelsDiv = document.getElementById('route-labels');
+
+    var routeWeight = 9;
+    var routeHoverWeight = 14;
+    var routeBackgroundWeight = 12;
+    var fastestRouteColor = '#0dff94';
+    var grayedOutDivColor = '#979797';
+
+    var map = tomtom.L.map('map', {
+      key: '<your-api-key>',
+      basePath: 'sdk',
+      center: passengerInitCoordinates,
+      zoom: 14,
+      traffic: true
+    });
+
+    var passengerIcon = tomtom.L.icon({
+      iconUrl: 'img/man-waving-arm_32.png',
+      iconSize: [ 30, 30 ],
+      iconAnchor: [ 15, 30 ],
+      popupAnchor: [ 0, -30 ]
+    });
+
+    var carIcons = [ tomtom.L.icon({
+      iconUrl: 'img/cab1.png',
+      iconSize: [ 55, 55 ]
+    }), tomtom.L.icon({
+      iconUrl: 'img/cab2.png',
+      iconSize: [ 55, 55 ]
+    }), tomtom.L.icon({
+      iconUrl: 'img/cab3.png',
+      iconSize: [ 55, 55 ]
+    }), tomtom.L.icon({
+      iconUrl: 'img/cab4.png',
+      iconSize: [ 55, 55 ]
+    }) ];
+
+    var modal = document.getElementById('modal');
+    var modalContent = document.getElementById('modal-content');
+
+    function setInitConfig() {
+      config = [
+        {
+          name: 'CAR #1',
+          color: '#00e2ff'
+        },
+        {
+          name: 'CAR #2',
+          color: '#0c95e8'
+        },
+        {
+          name: 'CAR #3',
+          color: '#0d64ff'
+        },
+        {
+          name: 'CAR #4',
+          color: '#0ce8c5'
+        }
+      ];
+    }
+
+    function humanReadableTimeFormat(time) {
+      var hrs = Math.floor(time / 3600);
+      var mins = Math.floor((time % 3600) / 60);
+      var secs = time % 60;
+      var formattedString = '';
+      if (hrs > 0) {
+        formattedString += hrs + ':' + (mins < 10 ? '0' : '');
+      }
+      formattedString += mins + ':' + (secs < 10 ? '0' : '');
+      formattedString += secs;
+      return formattedString;
+    }
+
+    function metersToKilometers(distance) {
+      distance = distance / 1000;
+      return distance.toFixed(1);
+    }
+
+    function convertToPoint(lat, long) {
+      return {
+        point: {
+          latitude: lat,
+          longitude: long
+        }
+      };
+    }
+
+    function convertToLatLon(coordinateString) {
+      var result = coordinateString.split(',');
+      return {
+        lat: parseFloat(result[0]),
+        lng: parseFloat(result[1])
+      };
+    }
+
+    function routeOnMouseOverAnimation(route) {
+      route.bringToFront().setStyle({
+        weight: routeHoverWeight
+      });
+    }
+
+    function routeOnMouseOutAnimation(route) {
+      routes[bestRouteIndex][0].bringToFront();
+      routes[bestRouteIndex][1].bringToFront();
+      route.setStyle({
+        weight: routeWeight
+      });
+    }
+
+    function buildOriginsParameter() {
+      var origins = [];
+      taxiCoordinates.forEach(function(child) {
+        origins.push(convertToPoint(child[0], child[1]));
+      });
+      return origins;
+    }
+
+    function buildDestinationsParameter() {
+      return [ convertToPoint(passengerMarker.getLatLng().lat, passengerMarker.getLatLng().lng) ];
+    }
+
+    function modifyFastestRouteColor(travelTimeInSecondsArray) {
+      var sortedTab = travelTimeInSecondsArray.slice();
+      sortedTab.sort(function(a, b) {return a - b});
+      bestRouteIndex = travelTimeInSecondsArray.indexOf(sortedTab[0]);
+      config[bestRouteIndex].color = fastestRouteColor;
+    }
+
+    function displayModal() {
+      modalContent.innerText = 'Dispatch car number ' + String(bestRouteIndex + 1);
+      modal.style.display = 'block';
+    }
+
+    function animateRouteOnDivHover(e) {
+      routeOnMouseOverAnimation(routes[e.target.id][1]);
+    }
+
+    function animateRouteOnDivOut(e) {
+      routeOnMouseOutAnimation(routes[e.target.id][1]);
+    }
+
+    function updateRouteLegend(travelTimeInSecondsArray, lengthInMetersArray, trafficDelayInSecondsArray) {
+      var div;
+      routeLabelsDiv.innerText = '';
+
+      config.forEach(function(child, index) {
+        div = document.createElement('div');
+        div.id = index;
+        div.style.borderLeftColor = child.color;
+        if (index !== bestRouteIndex) {
+          div.style.color = grayedOutDivColor;
+        }
+        div.colorHex = child.color;
+        div.innerText = child.name 
+          + ' drive time:' + humanReadableTimeFormat(travelTimeInSecondsArray[index]) 
+          + ', distance:' + metersToKilometers(lengthInMetersArray[index]) 
+          + 'km, ' + ((trafficDelayInSecondsArray[index] === 0) ? 'no traffic delay' : 'traffic delay:' + humanReadableTimeFormat(trafficDelayInSecondsArray[index]));
+        div.addEventListener('mouseover', animateRouteOnDivHover);
+        div.addEventListener('mouseout', animateRouteOnDivOut);
+        routeLabelsDiv.appendChild(div);
+      });
+    }
+
+    function drawRoute(locations, color, index) {
+      tomtom.routing().locations(locations).go().then(function(routeJson) {
+        var route = [];
+        route[0] = tomtom.L.geoJson(routeJson, {
+          style: {
+            color: 'black',
+            weight: routeBackgroundWeight
+          }
+        }).addTo(map);
+        route[1] = tomtom.L.geoJson(routeJson, {
+          style: {
+            color: color,
+            weight: routeWeight
+          }
+        }).addTo(map);
+        routes[index] = route;
+        route[1].on('mouseover', function() {
+          routeOnMouseOverAnimation(route[1]);
+          }
+        ).on('mouseout', function() {
+          routeOnMouseOutAnimation(route[1]);
+        });
+        if (index === bestRouteIndex) {
+          route[0].bringToFront();
+          route[1].bringToFront();
+        }
+        else {
+          route[1].bringToBack();
+          route[0].bringToBack();
+        }
+      });
+    }
+
+    function clear() {
+      routes.forEach(function(child) {
+        child[0].remove();
+        child[1].remove();
+      });
+      routes = [];
+      setInitConfig();
+      passengerMarker.closePopup();
+    }
+
+    function processMatrixResponse(result) {
+      var travelTimeInSecondsArray = [];
+      var lengthInMetersArray = [];
+      var trafficDelayInSecondsArray = [];
+      result.forEach(function(child) {
+        travelTimeInSecondsArray.push(child[0].routeSummary.travelTimeInSeconds);
+        lengthInMetersArray.push(child[0].routeSummary.lengthInMeters);
+        trafficDelayInSecondsArray.push(child[0].routeSummary.trafficDelayInSeconds);
+      });
+      modifyFastestRouteColor(travelTimeInSecondsArray);
+      updateRouteLegend(travelTimeInSecondsArray, lengthInMetersArray, trafficDelayInSecondsArray);
+      drawAllRoutes();
+      displayModal();
+    }
+
+    function callMatrix() {
+      tomtom.matrixRouting().departAt('now')
+        .origins(buildOriginsParameter())
+        .destinations(buildDestinationsParameter())
+        .go().then(processMatrixResponse);
+    }
+
+    function drawAllRoutes() {
+      taxiCoordinates.forEach(function(child, index) {
+        drawRoute(child + ':' + passengerMarker.getLatLng().lat + ','
+          + passengerMarker.getLatLng().lng, config[index].color, index);
+      });
+    }
+
+    function submitButtonHandler() {
+      clear();
+      callMatrix(); 
+    }
+
+    function drawPassengerMarkerOnMap(geoResponse) {
+      if (geoResponse && geoResponse.address
+          && geoResponse.address.freeformAddress) {
+        map.removeLayer(passengerMarker);
+        var popupContent = geoResponse.address.freeformAddress;
+        passengerMarker = tomtom.L.marker(convertToLatLon(geoResponse.position), {
+          icon: passengerIcon
+        }).addTo(map).bindPopup(popupContent).openPopup();
+      }
+    }
+
+    setInitConfig();
+    tomtom.setProductInfo('Taxi dispatcher example application', '1.00');
+    
+    passengerMarker = tomtom.L.marker(passengerInitCoordinates, {
+      icon: passengerIcon
+    }).addTo(map);
+    passengerMarker.bindPopup(
+        'Click anywhere on the map to change passenger location.').openPopup();
+    taxiCoordinates.forEach(function(child, index) {
+      tomtom.L.marker(child, {
+        icon: carIcons[index]
+      }).addTo(map);
+    });
+
+    tomtom.controlPanel({
+      position: 'topright',
+      collapsed: false,
+      close: null,
+      closeOnMapClick: false
+    }).addTo(map).addContent(document.getElementById('labels-container'));
+
+    map.on('click', function(event) {
+      var position = event.latlng;
+      tomtom.reverseGeocode().position(position)
+        .go().then(function(results) {drawPassengerMarkerOnMap(results)});
+    });
+
+    modal.addEventListener('click', function() {
+      modal.style.display = 'none';
+    });
+    document.getElementById('submit-button').addEventListener('click', submitButtonHandler);
+    </script>
+  </body>
+</html>
