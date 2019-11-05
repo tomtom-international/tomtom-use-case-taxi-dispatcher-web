@@ -4,9 +4,9 @@
 <head>
   <title>Taxi cars dispatcher</title>
   <meta charset="UTF-8">
-  <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.37.2/maps/maps.css'>
-  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.37.2/maps/maps-web.min.js"></script>
-  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.37.2/services/services-web.min.js"></script>
+  <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.38.0/maps/maps.css'>
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.38.0/maps/maps-web.min.js"></script>
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.38.0/services/services-web.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -18,13 +18,18 @@
     }
 
     #submit-button {
-      background: #b6d028 !important;
-      border-radius: 20px !important;
+      background: #df1b12;
       padding: 10px;
       margin-top: 10px;
       width: 100%;
       color: white;
       font-weight: bold;
+      transition: background-color .15s ease-in-out;
+    }
+
+    #submit-button:hover {
+      cursor: pointer;
+      background: #b1110e;
     }
 
     #labels-container {
@@ -98,7 +103,7 @@
 
     var taxiCoordinates = [[4.902642, 52.373627], [4.927198, 52.3659],
     [4.893488, 52.347878], [4.858433, 52.349447]];
-
+    var taxiPassengerBatchCoordinates = []
     var passengerInitCoordinates = [4.876935, 52.360306];
     var passengerMarker;
 
@@ -147,11 +152,19 @@
         },
         {
           name: 'CAR #4',
-          color: '#0ce8c5'
+          color: '#0cD8c5'
         }
       ];
+      updateTaxiBatchLocations(passengerInitCoordinates);
     }
 
+    function updateTaxiBatchLocations(passengerCoordinates) {
+      taxiPassengerBatchCoordinates = [];
+      taxiCoordinates.forEach(coordinates => {
+        taxiPassengerBatchCoordinates.push(coordinates + ':' + passengerCoordinates);
+      });
+    }
+    
     function humanReadableTimeFormat(time) {
       var hrs = Math.floor(time / 3600);
       var mins = Math.floor((time % 3600) / 60);
@@ -192,7 +205,7 @@
       map.moveLayer(route[1])
     }
 
-    function routeOnMouseOutAnimation(route) {
+    function bringBestRouteToFront() {
       map.moveLayer(routes[bestRouteIndex][0])
       map.moveLayer(routes[bestRouteIndex][1])
     }
@@ -225,10 +238,6 @@
       routeOnMouseOverAnimation(routes[e.target.id]);
     }
 
-    function animateRouteOnDivOut(e) {
-      routeOnMouseOutAnimation(routes[e.target.id]);
-    }
-
     function updateRouteLegend(travelTimeInSecondsArray, lengthInMetersArray, trafficDelayInSecondsArray) {
       var div;
       routeLabelsDiv.innerText = '';
@@ -246,82 +255,82 @@
           + ', distance:' + metersToKilometers(lengthInMetersArray[index])
           + 'km, ' + ((trafficDelayInSecondsArray[index] === 0) ? 'no traffic delay' : 'traffic delay:' + humanReadableTimeFormat(trafficDelayInSecondsArray[index]));
         div.addEventListener('mouseover', animateRouteOnDivHover);
-        div.addEventListener('mouseout', animateRouteOnDivOut);
+        div.addEventListener('mouseout', bringBestRouteToFront);
         routeLabelsDiv.appendChild(div);
       });
     }
 
-    function drawRoute(locations, color, index) {
-
+    function drawAllRoutes() {
       tt.services.calculateRoute({
+        batchMode: 'sync',
         key: apiKey,
-        locations: locations
+        batchItems: [
+          { locations: taxiPassengerBatchCoordinates[0] },
+          { locations: taxiPassengerBatchCoordinates[1] },
+          { locations: taxiPassengerBatchCoordinates[2] },
+          { locations: taxiPassengerBatchCoordinates[3] }
+        ]
       })
-        .go().then(function (routeJson) {
-          var routeGeoJson = routeJson.toGeoJson()
-          var route = [];
-          var route_background_layer_id = 'route_background_' + index;
-          var route_layer_id = 'route_' + index;
+        .go().then(function (results) {
+          results.forEach(function (singleRoute, index) {
+            var routeGeoJson = singleRoute.toGeoJson()
+            var route = [];
+            var route_background_layer_id = 'route_background_' + index;
+            var route_layer_id = 'route_' + index;
 
-          map.addLayer({
-            'id': route_background_layer_id,
-            'type': 'line',
-            'source': {
-              'type': 'geojson',
-              'data': routeGeoJson
-            },
-            'paint': {
-              'line-color': 'black',
-              'line-width': routeBackgroundWeight
-            },
-            'layout': {
-              'line-cap': 'round',
-              'line-join': 'round',
-            }
-          });
-          map.addLayer({
-            'id': route_layer_id,
-            'type': 'line',
-            'source': {
-              'type': 'geojson',
-              'data': routeGeoJson
-            },
-            'paint': {
-              'line-color': color,
-              'line-width': routeWeight
-            },
-            'layout': {
-              'line-cap': 'round',
-              'line-join': 'round',
-            }
-          });
+            map.addLayer({
+              'id': route_background_layer_id,
+              'type': 'line',
+              'source': {
+                'type': 'geojson',
+                'data': routeGeoJson
+              },
+              'paint': {
+                'line-color': 'black',
+                'line-width': routeBackgroundWeight
+              },
+              'layout': {
+                'line-cap': 'round',
+                'line-join': 'round',
+              }
+            });
+            map.addLayer({
+              'id': route_layer_id,
+              'type': 'line',
+              'source': {
+                'type': 'geojson',
+                'data': routeGeoJson
+              },
+              'paint': {
+                'line-color': config[index].color,
+                'line-width': routeWeight
+              },
+              'layout': {
+                'line-cap': 'round',
+                'line-join': 'round',
+              }
+            });
 
-          route[0] = route_background_layer_id
-          route[1] = route_layer_id
-          routes[index] = route;
-
-          var bounds = new tt.LngLatBounds();
-          routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
-            bounds.extend(tt.LngLat.convert(point));
+            route[0] = route_background_layer_id
+            route[1] = route_layer_id
+            routes[index] = route;
+            
+            var bounds = new tt.LngLatBounds();
+            routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
+              bounds.extend(tt.LngLat.convert(point));
+            });
+            map.fitBounds(bounds, { padding: 155 });
+            
+            map.on("mouseenter", route_layer_id, function (e) {
+              map.moveLayer(route_background_layer_id);
+              map.moveLayer(route_layer_id);
+            });
+            
+            map.on("mouseleave", route_layer_id, function (e) {
+              bringBestRouteToFront();
+            });
           });
-          map.fitBounds(bounds, { padding: 155 });
-
-          map.on("mouseenter", route_background_layer_id, function (e) {
-            console.log(e);
-          });
-          map.on("mouseleave", route_background_layer_id, function (e) {
-            console.log(e);
-          });
-          // route[1].on('mouseover', function() {
-          //   routeOnMouseOverAnimation(route[1]);
-          //   }
-          // ).on('mouseout', function() {
-          //   routeOnMouseOutAnimation(route[1]);
-          // });
-          if (index === bestRouteIndex) {
-            map.moveLayer(route[0])
-            map.moveLayer(route[1])
-          }
+          bringBestRouteToFront();
         });
     }
 
@@ -333,7 +342,6 @@
         map.removeSource(child[1])
       });
       routes = [];
-      setInitConfig();
       passengerMarker.togglePopup();
     }
 
@@ -363,13 +371,6 @@
       }).go().then(processMatrixResponse);
     }
 
-    function drawAllRoutes() {
-      taxiCoordinates.forEach(function (child, index) {
-        drawRoute(child + ':' + passengerMarker.getLngLat().lng + ','
-          + passengerMarker.getLngLat().lat, config[index].color, index);
-      });
-    }
-
     function submitButtonHandler() {
       clear();
       callMatrix();
@@ -379,24 +380,33 @@
       if (geoResponse && geoResponse.addresses
         && geoResponse.addresses[0].address.freeformAddress) {
         passengerMarker.remove()
-        var passengerMarkerElement = document.createElement('div');
-        passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
+        var passengerMarkerElement = createPassengerMarkerElement();
         var popup = new tt.Popup({ offset: 35 }).setHTML(geoResponse.addresses[0].address.freeformAddress);
-        passengerMarker = new tt.Marker({ element: passengerMarkerElement }).setLngLat(geoResponse.addresses[0].position).setPopup(popup).addTo(map);
+        passengerMarker = createPasssengerMarker(passengerMarkerElement, geoResponse.addresses[0].position, popup);
         passengerMarker.togglePopup();
+        updateTaxiBatchLocations(passengerMarker.getLngLat().toArray())
       }
     }
 
+    function createPassengerMarkerElement() {
+      var passengerMarkerElement = document.createElement('div');
+      passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
+      return passengerMarkerElement;
+    }
+
+    function createPasssengerMarker(markerElementDiv, markerCoordinates, popup) {
+      var marker = new tt.Marker({ element: markerElementDiv }).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
+      return marker;
+    }
 
     setInitConfig();
     tt.setProductInfo('Taxi dispatcher example application', '1.00');
 
     map.addControl(new tt.NavigationControl(), 'top-left');
-    var passengerMarkerElement = document.createElement('div');
-    passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
+    var passengerMarkerElement = createPassengerMarkerElement();
     var popup = new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location.");
 
-    var passengerMarker = new tt.Marker({ element: passengerMarkerElement }).setLngLat(passengerInitCoordinates).setPopup(popup).addTo(map);
+    passengerMarker = createPasssengerMarker(passengerMarkerElement, passengerInitCoordinates, popup);
     passengerMarker.togglePopup();
 
     taxiCoordinates.forEach(function (child, index) {
@@ -408,7 +418,6 @@
 
     map.on('click', function (event) {
       var position = event.lngLat
-
       tt.services.reverseGeocode({
         key: apiKey,
         position: position
