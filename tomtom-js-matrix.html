@@ -101,16 +101,14 @@
   <script>
     var apiKey = 'YOUR_API_KEY';
 
-    var taxiCoordinates = [[4.902642, 52.373627], [4.927198, 52.3659],
-    [4.893488, 52.347878], [4.858433, 52.349447]];
-    var taxiPassengerBatchCoordinates = []
+    var taxiPassengerBatchCoordinates = [];
     var passengerInitCoordinates = [4.876935, 52.360306];
     var passengerMarker;
 
     var routes = [];
     var bestRouteIndex;
 
-    var config;
+    var taxiConfig;
     var routeLabelsDiv = document.getElementById('route-labels');
 
     var routeWeight = 9;
@@ -127,41 +125,42 @@
       zoom: 13
     });
 
-    var carIcons = [
-      "<img src='img/cab1.png' style='width: 55px; height: 55px';>",
-      "<img src='img/cab2.png' style='width: 55px; height: 55px';>",
-      "<img src='img/cab3.png' style='width: 55px; height: 55px';>",
-      "<img src='img/cab4.png' style='width: 55px; height: 55px';>"];
-
     var modal = document.getElementById('modal');
     var modalContent = document.getElementById('modal-content');
 
-    function setInitConfig() {
-      config = [
+    function setDefaultTaxiConfig() {
+      taxiConfig = [
         {
           name: 'CAR #1',
-          color: '#00e2ff'
+          color: '#00e2ff',
+          icon: "<img src='img/cab1.png' style='width: 55px; height: 55px';>",
+          coordinates: [4.902642, 52.373627]
         },
         {
           name: 'CAR #2',
-          color: '#0c95e8'
+          color: '#0c95e8',
+          icon: "<img src='img/cab2.png' style='width: 55px; height: 55px';>",
+          coordinates: [4.927198, 52.3659]
         },
         {
           name: 'CAR #3',
-          color: '#0d64ff'
+          color: '#0d64ff',
+          icon: "<img src='img/cab3.png' style='width: 55px; height: 55px';>",
+          coordinates: [4.893488, 52.347878]
         },
         {
           name: 'CAR #4',
-          color: '#0cD8c5'
+          color: '#0cD8c5',
+          icon: "<img src='img/cab4.png' style='width: 55px; height: 55px';>",
+          coordinates: [4.858433, 52.349447]
         }
       ];
-      updateTaxiBatchLocations(passengerInitCoordinates);
     }
 
     function updateTaxiBatchLocations(passengerCoordinates) {
       taxiPassengerBatchCoordinates = [];
-      taxiCoordinates.forEach(coordinates => {
-        taxiPassengerBatchCoordinates.push(coordinates + ':' + passengerCoordinates);
+      taxiConfig.forEach(taxi => {
+        taxiPassengerBatchCoordinates.push(taxi.coordinates + ':' + passengerCoordinates);
       });
     }
     
@@ -201,19 +200,19 @@
     }
 
     function routeOnMouseOverAnimation(route) {
-      map.moveLayer(route[0])
-      map.moveLayer(route[1])
+      map.moveLayer(route[0]);
+      map.moveLayer(route[1]);
     }
 
     function bringBestRouteToFront() {
-      map.moveLayer(routes[bestRouteIndex][0])
-      map.moveLayer(routes[bestRouteIndex][1])
+      map.moveLayer(routes[bestRouteIndex][0]);
+      map.moveLayer(routes[bestRouteIndex][1]);
     }
 
     function buildOriginsParameter() {
       var origins = [];
-      taxiCoordinates.forEach(function (child) {
-        origins.push(convertToPoint(child[1], child[0]));
+      taxiConfig.forEach(function (taxi) {
+        origins.push(convertToPoint(taxi.coordinates[1], taxi.coordinates[0]));
       });
       return origins;
     }
@@ -226,7 +225,7 @@
       var sortedTab = travelTimeInSecondsArray.slice();
       sortedTab.sort(function (a, b) { return a - b });
       bestRouteIndex = travelTimeInSecondsArray.indexOf(sortedTab[0]);
-      config[bestRouteIndex].color = fastestRouteColor;
+      taxiConfig[bestRouteIndex].color = fastestRouteColor;
     }
 
     function displayModal() {
@@ -242,7 +241,7 @@
       var div;
       routeLabelsDiv.innerText = '';
 
-      config.forEach(function (child, index) {
+      taxiConfig.forEach(function (child, index) {
         div = document.createElement('div');
         div.id = index;
         div.style.borderLeftColor = child.color;
@@ -273,7 +272,7 @@
       })
         .go().then(function (results) {
           results.forEach(function (singleRoute, index) {
-            var routeGeoJson = singleRoute.toGeoJson()
+            var routeGeoJson = singleRoute.toGeoJson();
             var route = [];
             var route_background_layer_id = 'route_background_' + index;
             var route_layer_id = 'route_' + index;
@@ -302,7 +301,7 @@
                 'data': routeGeoJson
               },
               'paint': {
-                'line-color': config[index].color,
+                'line-color': taxiConfig[index].color,
                 'line-width': routeWeight
               },
               'layout': {
@@ -311,15 +310,17 @@
               }
             });
 
-            route[0] = route_background_layer_id
-            route[1] = route_layer_id
+            route[0] = route_background_layer_id;
+            route[1] = route_layer_id;
             routes[index] = route;
             
-            var bounds = new tt.LngLatBounds();
-            routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
-              bounds.extend(tt.LngLat.convert(point));
-            });
-            map.fitBounds(bounds, { padding: 155 });
+            if (index === bestRouteIndex) {
+              var bounds = new tt.LngLatBounds();
+              routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
+                bounds.extend(tt.LngLat.convert(point));
+              });
+              map.fitBounds(bounds, { padding: 150 });
+            }            
             
             map.on("mouseenter", route_layer_id, function (e) {
               map.moveLayer(route_background_layer_id);
@@ -336,12 +337,13 @@
 
     function clear() {
       routes.forEach(function (child) {
-        map.removeLayer(child[0])
-        map.removeLayer(child[1])
-        map.removeSource(child[0])
-        map.removeSource(child[1])
+        map.removeLayer(child[0]);
+        map.removeLayer(child[1]);
+        map.removeSource(child[0]);
+        map.removeSource(child[1]);
       });
       routes = [];
+      setDefaultTaxiConfig();
       passengerMarker.togglePopup();
     }
 
@@ -379,12 +381,12 @@
     function drawPassengerMarkerOnMap(geoResponse) {
       if (geoResponse && geoResponse.addresses
         && geoResponse.addresses[0].address.freeformAddress) {
-        passengerMarker.remove()
+        passengerMarker.remove();
         var passengerMarkerElement = createPassengerMarkerElement();
         var popup = new tt.Popup({ offset: 35 }).setHTML(geoResponse.addresses[0].address.freeformAddress);
         passengerMarker = createPasssengerMarker(passengerMarkerElement, geoResponse.addresses[0].position, popup);
         passengerMarker.togglePopup();
-        updateTaxiBatchLocations(passengerMarker.getLngLat().toArray())
+        updateTaxiBatchLocations(passengerMarker.getLngLat().toArray());
       }
     }
 
@@ -399,7 +401,9 @@
       return marker;
     }
 
-    setInitConfig();
+    setDefaultTaxiConfig();
+    updateTaxiBatchLocations(passengerInitCoordinates);
+
     tt.setProductInfo('Taxi dispatcher example application', '1.00');
 
     map.addControl(new tt.NavigationControl(), 'top-left');
@@ -409,15 +413,14 @@
     passengerMarker = createPasssengerMarker(passengerMarkerElement, passengerInitCoordinates, popup);
     passengerMarker.togglePopup();
 
-    taxiCoordinates.forEach(function (child, index) {
+    taxiConfig.forEach(function (taxi, index) {
       var carMarkerElement = document.createElement('div');
-      carMarkerElement.innerHTML = carIcons[index];
-      new tt.Marker({ element: carMarkerElement }).setLngLat(child).addTo(map);
-
+      carMarkerElement.innerHTML = taxi.icon;
+      new tt.Marker({ element: carMarkerElement, offset: [0, 27] }).setLngLat(taxi.coordinates).addTo(map);
     });
 
     map.on('click', function (event) {
-      var position = event.lngLat
+      var position = event.lngLat;
       tt.services.reverseGeocode({
         key: apiKey,
         position: position
