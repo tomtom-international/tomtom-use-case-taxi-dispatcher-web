@@ -130,31 +130,20 @@
 
     function setDefaultTaxiConfig() {
       taxiConfig = [
-        {
-          name: 'CAR #1',
-          color: '#00e2ff',
-          icon: "<img src='img/cab1.png' style='width: 55px; height: 55px';>",
-          coordinates: [4.902642, 52.373627]
-        },
-        {
-          name: 'CAR #2',
-          color: '#0c95e8',
-          icon: "<img src='img/cab2.png' style='width: 55px; height: 55px';>",
-          coordinates: [4.927198, 52.3659]
-        },
-        {
-          name: 'CAR #3',
-          color: '#0d64ff',
-          icon: "<img src='img/cab3.png' style='width: 55px; height: 55px';>",
-          coordinates: [4.893488, 52.347878]
-        },
-        {
-          name: 'CAR #4',
-          color: '#0cD8c5',
-          icon: "<img src='img/cab4.png' style='width: 55px; height: 55px';>",
-          coordinates: [4.858433, 52.349447]
-        }
+        createTaxi('CAR #1', '#00e2ff', [4.902642, 52.373627], 'img/cab1.png'),
+        createTaxi('CAR #2', '#0c95e8', [4.927198, 52.3659], 'img/cab2.png'),
+        createTaxi('CAR #3', '#0d64ff', [4.893488, 52.347878], 'img/cab3.png'),
+        createTaxi('CAR #4', '#0cD8c5', [4.858433, 52.349447], 'img/cab4.png')
       ];
+    }
+
+    function createTaxi(name, color, coordinates, iconFilePath, iconWidth = 55, iconHeight = 55) {
+      return {
+          name: name,
+          color: color,
+          icon: "<img src=" + iconFilePath + " style='width: " + iconWidth + "px; height: " + iconHeight + "px;'>",
+          coordinates: coordinates
+        };
     }
 
     function updateTaxiBatchLocations(passengerCoordinates) {
