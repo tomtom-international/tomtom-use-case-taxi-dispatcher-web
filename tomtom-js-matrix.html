@@ -25,6 +25,9 @@
       color: white;
       font-weight: bold;
       transition: background-color .15s ease-in-out;
+      text-transform: uppercase;
+      border: none;
+      outline: none;
     }
 
     #submit-button:hover {
@@ -33,6 +36,7 @@
     }
 
     #labels-container {
+      font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
       position: fixed;
       margin-right: 10px;
       top: 10px;
@@ -114,7 +118,7 @@
     var routeWeight = 9;
     var routeHoverWeight = 14;
     var routeBackgroundWeight = 12;
-    var fastestRouteColor = '#0dff94';
+    var fastestRouteColor = '#65A7A9';
     var grayedOutDivColor = '#979797';
 
     var map = tt.map({
@@ -130,10 +134,10 @@
 
     function setDefaultTaxiConfig() {
       taxiConfig = [
-        createTaxi('CAR #1', '#00e2ff', [4.902642, 52.373627], 'img/cab1.png'),
-        createTaxi('CAR #2', '#0c95e8', [4.927198, 52.3659], 'img/cab2.png'),
-        createTaxi('CAR #3', '#0d64ff', [4.893488, 52.347878], 'img/cab3.png'),
-        createTaxi('CAR #4', '#0cD8c5', [4.858433, 52.349447], 'img/cab4.png')
+        createTaxi('CAR #1', '#006967', [4.902642, 52.373627], 'img/cab1.png'),
+        createTaxi('CAR #2', '#EC619F', [4.927198, 52.3659], 'img/cab2.png'),
+        createTaxi('CAR #3', '#002C5E', [4.893488, 52.347878], 'img/cab3.png'),
+        createTaxi('CAR #4', '#F9B023', [4.858433, 52.349447], 'img/cab4.png')
       ];
     }
 
