@@ -107,6 +107,7 @@
 
     var taxiPassengerBatchCoordinates = [];
     var passengerInitCoordinates = [4.876935, 52.360306];
+    var zoomLevel = 13
     var passengerMarker;
 
     var routes = [];
@@ -126,7 +127,7 @@
       container: 'map',
       center: passengerInitCoordinates,
       style: 'tomtom://vector/1/basic-main',
-      zoom: 13
+      zoom: zoomLevel
     });
 
     var modal = document.getElementById('modal');
@@ -135,7 +136,7 @@
     function setDefaultTaxiConfig() {
       taxiConfig = [
         createTaxi('CAR #1', '#006967', [4.902642, 52.373627], 'img/cab1.png'),
-        createTaxi('CAR #2', '#EC619F', [4.927198, 52.3659], 'img/cab2.png'),
+        createTaxi('CAR #2', '#EC619F', [4.927198, 52.365927], 'img/cab2.png'),
         createTaxi('CAR #3', '#002C5E', [4.893488, 52.347878], 'img/cab3.png'),
         createTaxi('CAR #4', '#F9B023', [4.858433, 52.349447], 'img/cab4.png')
       ];
