@@ -262,38 +262,8 @@
             var route_background_layer_id = 'route_background_' + index;
             var route_layer_id = 'route_' + index;
 
-            map.addLayer({
-              'id': route_background_layer_id,
-              'type': 'line',
-              'source': {
-                'type': 'geojson',
-                'data': routeGeoJson
-              },
-              'paint': {
-                'line-color': 'black',
-                'line-width': routeBackgroundWeight
-              },
-              'layout': {
-                'line-cap': 'round',
-                'line-join': 'round',
-              }
-            });
-            map.addLayer({
-              'id': route_layer_id,
-              'type': 'line',
-              'source': {
-                'type': 'geojson',
-                'data': routeGeoJson
-              },
-              'paint': {
-                'line-color': taxiConfig[index].color,
-                'line-width': routeWeight
-              },
-              'layout': {
-                'line-cap': 'round',
-                'line-join': 'round',
-              }
-            });
+            map.addLayer(buildStyle(route_background_layer_id, routeGeoJson, 'black', routeBackgroundWeight))
+            .addLayer(buildStyle(route_layer_id,routeGeoJson,taxiConfig[index].color,routeWeight));
 
             route[0] = route_background_layer_id;
             route[1] = route_layer_id;
@@ -307,17 +277,36 @@
               map.fitBounds(bounds, { padding: 150 });
             }
 
-            map.on("mouseenter", route_layer_id, function (e) {
+            map.on("mouseenter", route_layer_id, function () {
               map.moveLayer(route_background_layer_id);
               map.moveLayer(route_layer_id);
             });
 
-            map.on("mouseleave", route_layer_id, function (e) {
+            map.on("mouseleave", route_layer_id, function () {
               bringBestRouteToFront();
             });
           });
           bringBestRouteToFront();
         });
+    }
+
+    function buildStyle(id, data, color, width) {
+      return {
+        'id': id,
+        'type': 'line',
+        'source': {
+          'type': 'geojson',
+          'data': data
+        },
+        'paint': {
+          'line-color': color,
+          'line-width': width
+        },
+        'layout': {
+          'line-cap': 'round',
+          'line-join': 'round',
+        }
+      }
     }
 
     function clear() {
