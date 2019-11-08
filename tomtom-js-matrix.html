@@ -103,7 +103,7 @@
     <div id="modal-content"></div>
   </div>
   <script>
-    var apiKey = 'YOUR_API_KEY';
+    var apiKey = '<your-api-key>';
 
     var taxiPassengerBatchCoordinates = [];
     var passengerInitCoordinates = [4.876935, 52.360306];
@@ -144,11 +144,11 @@
 
     function createTaxi(name, color, coordinates, iconFilePath, iconWidth = 55, iconHeight = 55) {
       return {
-          name: name,
-          color: color,
-          icon: "<img src=" + iconFilePath + " style='width: " + iconWidth + "px; height: " + iconHeight + "px;'>",
-          coordinates: coordinates
-        };
+        name: name,
+        color: color,
+        icon: "<img src=" + iconFilePath + " style='width: " + iconWidth + "px; height: " + iconHeight + "px;'>",
+        coordinates: coordinates
+      };
     }
 
     function updateTaxiBatchLocations(passengerCoordinates) {
@@ -157,7 +157,7 @@
         taxiPassengerBatchCoordinates.push(taxi.coordinates + ':' + passengerCoordinates);
       });
     }
-    
+
     function humanReadableTimeFormat(time) {
       var hrs = Math.floor(time / 3600);
       var mins = Math.floor((time % 3600) / 60);
@@ -307,20 +307,20 @@
             route[0] = route_background_layer_id;
             route[1] = route_layer_id;
             routes[index] = route;
-            
+
             if (index === bestRouteIndex) {
               var bounds = new tt.LngLatBounds();
               routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
                 bounds.extend(tt.LngLat.convert(point));
               });
               map.fitBounds(bounds, { padding: 150 });
-            }            
-            
+            }
+
             map.on("mouseenter", route_layer_id, function (e) {
               map.moveLayer(route_background_layer_id);
               map.moveLayer(route_layer_id);
             });
-            
+
             map.on("mouseleave", route_layer_id, function (e) {
               bringBestRouteToFront();
             });
@@ -376,22 +376,17 @@
       if (geoResponse && geoResponse.addresses
         && geoResponse.addresses[0].address.freeformAddress) {
         passengerMarker.remove();
-        var passengerMarkerElement = createPassengerMarkerElement();
-        var popup = new tt.Popup({ offset: 35 }).setHTML(geoResponse.addresses[0].address.freeformAddress);
-        passengerMarker = createPasssengerMarker(passengerMarkerElement, geoResponse.addresses[0].position, popup);
+        passengerMarker = createPasssengerMarker(geoResponse.addresses[0].position,
+          new tt.Popup({ offset: 35 }).setHTML(geoResponse.addresses[0].address.freeformAddress));
         passengerMarker.togglePopup();
         updateTaxiBatchLocations(passengerMarker.getLngLat().toArray());
       }
     }
 
-    function createPassengerMarkerElement() {
+    function createPasssengerMarker(markerCoordinates, popup) {
       var passengerMarkerElement = document.createElement('div');
       passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
-      return passengerMarkerElement;
-    }
-
-    function createPasssengerMarker(markerElementDiv, markerCoordinates, popup) {
-      var marker = new tt.Marker({ element: markerElementDiv }).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
+      var marker = new tt.Marker({ element: passengerMarkerElement }).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
       return marker;
     }
 
@@ -401,12 +396,9 @@
     tt.setProductInfo('Taxi dispatcher example application', '1.00');
 
     map.addControl(new tt.NavigationControl(), 'top-left');
-    var passengerMarkerElement = createPassengerMarkerElement();
-    var popup = new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location.");
-
-    passengerMarker = createPasssengerMarker(passengerMarkerElement, passengerInitCoordinates, popup);
+    passengerMarker = createPasssengerMarker(passengerInitCoordinates,
+      new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location."));
     passengerMarker.togglePopup();
-
     taxiConfig.forEach(function (taxi, index) {
       var carMarkerElement = document.createElement('div');
       carMarkerElement.innerHTML = taxi.icon;
