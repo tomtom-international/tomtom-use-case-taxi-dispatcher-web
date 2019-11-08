@@ -107,7 +107,7 @@
 
     var taxiPassengerBatchCoordinates = [];
     var passengerInitCoordinates = [4.876935, 52.360306];
-    var zoomLevel = 13
+    var zoomLevel = 13;
     var passengerMarker;
 
     var routes = [];
@@ -117,7 +117,6 @@
     var routeLabelsDiv = document.getElementById('route-labels');
 
     var routeWeight = 9;
-    var routeHoverWeight = 14;
     var routeBackgroundWeight = 12;
     var fastestRouteColor = '#65A7A9';
     var grayedOutDivColor = '#979797';
@@ -182,14 +181,6 @@
           latitude: lat,
           longitude: long
         }
-      };
-    }
-
-    function convertToLatLon(coordinateString) {
-      var result = coordinateString.split(',');
-      return {
-        lat: parseFloat(result[0]),
-        lng: parseFloat(result[1])
       };
     }
 
@@ -399,7 +390,7 @@
     passengerMarker = createPasssengerMarker(passengerInitCoordinates,
       new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location."));
     passengerMarker.togglePopup();
-    taxiConfig.forEach(function (taxi, index) {
+    taxiConfig.forEach(function (taxi) {
       var carMarkerElement = document.createElement('div');
       carMarkerElement.innerHTML = taxi.icon;
       new tt.Marker({ element: carMarkerElement, offset: [0, 27] }).setLngLat(taxi.coordinates).addTo(map);
