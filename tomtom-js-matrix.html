@@ -38,7 +38,6 @@
     #labels-container {
       font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
       position: fixed;
-      margin-right: 10px;
       top: 10px;
       right: 10px;
       width: 400px;
@@ -103,25 +102,25 @@
     <div id="modal-content"></div>
   </div>
   <script>
-    var apiKey = '<your-api-key>';
+    const apiKey = '<your-api-key>';
 
-    var taxiPassengerBatchCoordinates = [];
-    var passengerInitCoordinates = [4.876935, 52.360306];
-    var zoomLevel = 13;
-    var passengerMarker;
+    let taxiPassengerBatchCoordinates = [];
+    const passengerInitCoordinates = [4.876935, 52.360306];
+    const zoomLevel = 13;
+    let passengerMarker;
 
-    var routes = [];
-    var bestRouteIndex;
+    let routes = [];
+    let bestRouteIndex;
 
-    var taxiConfig;
-    var routeLabelsDiv = document.getElementById('route-labels');
+    let taxiConfig;
+    const routeLabelsDiv = document.getElementById('route-labels');
 
-    var routeWeight = 9;
-    var routeBackgroundWeight = 12;
-    var fastestRouteColor = '#65A7A9';
-    var grayedOutDivColor = '#979797';
+    const routeWeight = 9;
+    const routeBackgroundWeight = 12;
+    const fastestRouteColor = '#65A7A9';
+    const grayedOutDivColor = '#979797';
 
-    var map = tt.map({
+    const map = tt.map({
       key: apiKey,
       container: 'map',
       center: passengerInitCoordinates,
@@ -129,8 +128,8 @@
       zoom: zoomLevel
     });
 
-    var modal = document.getElementById('modal');
-    var modalContent = document.getElementById('modal-content');
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modal-content');
 
     function setDefaultTaxiConfig() {
       taxiConfig = [
@@ -158,10 +157,10 @@
     }
 
     function humanReadableTimeFormat(time) {
-      var hrs = Math.floor(time / 3600);
-      var mins = Math.floor((time % 3600) / 60);
-      var secs = time % 60;
-      var formattedString = '';
+      const hrs = Math.floor(time / 3600);
+      const mins = Math.floor((time % 3600) / 60);
+      const secs = time % 60;
+      let formattedString = '';
       if (hrs > 0) {
         formattedString += hrs + ':' + (mins < 10 ? '0' : '');
       }
@@ -195,7 +194,7 @@
     }
 
     function buildOriginsParameter() {
-      var origins = [];
+      const origins = [];
       taxiConfig.forEach(function (taxi) {
         origins.push(convertToPoint(taxi.coordinates[1], taxi.coordinates[0]));
       });
@@ -207,7 +206,7 @@
     }
 
     function modifyFastestRouteColor(travelTimeInSecondsArray) {
-      var sortedTab = travelTimeInSecondsArray.slice();
+      const sortedTab = travelTimeInSecondsArray.slice();
       sortedTab.sort(function (a, b) { return a - b });
       bestRouteIndex = travelTimeInSecondsArray.indexOf(sortedTab[0]);
       taxiConfig[bestRouteIndex].color = fastestRouteColor;
@@ -223,7 +222,7 @@
     }
 
     function updateRouteLegend(travelTimeInSecondsArray, lengthInMetersArray, trafficDelayInSecondsArray) {
-      var div;
+      let div;
       routeLabelsDiv.innerText = '';
 
       taxiConfig.forEach(function (child, index) {
@@ -257,10 +256,10 @@
       })
         .go().then(function (results) {
           results.forEach(function (singleRoute, index) {
-            var routeGeoJson = singleRoute.toGeoJson();
-            var route = [];
-            var route_background_layer_id = 'route_background_' + index;
-            var route_layer_id = 'route_' + index;
+            const routeGeoJson = singleRoute.toGeoJson();
+            const route = [];
+            const route_background_layer_id = 'route_background_' + index;
+            const route_layer_id = 'route_' + index;
 
             map.addLayer(buildStyle(route_background_layer_id, routeGeoJson, 'black', routeBackgroundWeight))
             .addLayer(buildStyle(route_layer_id,routeGeoJson,taxiConfig[index].color,routeWeight));
@@ -270,7 +269,7 @@
             routes[index] = route;
 
             if (index === bestRouteIndex) {
-              var bounds = new tt.LngLatBounds();
+              const bounds = new tt.LngLatBounds();
               routeGeoJson.features[0].geometry.coordinates.forEach(function (point) {
                 bounds.extend(tt.LngLat.convert(point));
               });
@@ -304,7 +303,7 @@
         },
         'layout': {
           'line-cap': 'round',
-          'line-join': 'round',
+          'line-join': 'round'
         }
       }
     }
@@ -322,9 +321,9 @@
     }
 
     function processMatrixResponse(result) {
-      var travelTimeInSecondsArray = [];
-      var lengthInMetersArray = [];
-      var trafficDelayInSecondsArray = [];
+      const travelTimeInSecondsArray = [];
+      const lengthInMetersArray = [];
+      const trafficDelayInSecondsArray = [];
       result.forEach(function (child) {
         travelTimeInSecondsArray.push(child[0].routeSummary.travelTimeInSeconds);
         lengthInMetersArray.push(child[0].routeSummary.lengthInMeters);
@@ -337,8 +336,8 @@
     }
 
     function callMatrix() {
-      var origins = buildOriginsParameter();
-      var destinations = buildDestinationsParameter();
+      const origins = buildOriginsParameter();
+      const destinations = buildDestinationsParameter();
       tt.services.matrixRouting({
         key: apiKey,
         origins: origins,
@@ -364,10 +363,9 @@
     }
 
     function createPasssengerMarker(markerCoordinates, popup) {
-      var passengerMarkerElement = document.createElement('div');
+      const passengerMarkerElement = document.createElement('div');
       passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
-      var marker = new tt.Marker({ element: passengerMarkerElement }).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
-      return marker;
+      return new tt.Marker({element: passengerMarkerElement}).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
     }
 
     setDefaultTaxiConfig();
@@ -380,13 +378,13 @@
       new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location."));
     passengerMarker.togglePopup();
     taxiConfig.forEach(function (taxi) {
-      var carMarkerElement = document.createElement('div');
+      const carMarkerElement = document.createElement('div');
       carMarkerElement.innerHTML = taxi.icon;
       new tt.Marker({ element: carMarkerElement, offset: [0, 27] }).setLngLat(taxi.coordinates).addTo(map);
     });
 
     map.on('click', function (event) {
-      var position = event.lngLat;
+      const position = event.lngLat;
       tt.services.reverseGeocode({
         key: apiKey,
         position: position
