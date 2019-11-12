@@ -91,8 +91,7 @@
 </head>
 
 <body>
-  <div id="map">
-  </div>
+  <div id="map"></div>
   <div id="labels-container">
     <label>Find the taxi that will arrive fastest</label>
     <div id="route-labels"></div>
@@ -104,15 +103,16 @@
   <script>
     const apiKey = '<your-api-key>';
 
-    let taxiPassengerBatchCoordinates = [];
     const passengerInitCoordinates = [4.876935, 52.360306];
-    const zoomLevel = 13;
     let passengerMarker;
+
+    let taxiPassengerBatchCoordinates = [];
+    let taxiConfig;
+    const zoomLevel = 13;
 
     let routes = [];
     let bestRouteIndex;
 
-    let taxiConfig;
     const routeLabelsDiv = document.getElementById('route-labels');
 
     const routeWeight = 9;
@@ -262,7 +262,7 @@
             const route_layer_id = 'route_' + index;
 
             map.addLayer(buildStyle(route_background_layer_id, routeGeoJson, 'black', routeBackgroundWeight))
-            .addLayer(buildStyle(route_layer_id,routeGeoJson,taxiConfig[index].color,routeWeight));
+              .addLayer(buildStyle(route_layer_id, routeGeoJson, taxiConfig[index].color, routeWeight));
 
             route[0] = route_background_layer_id;
             route[1] = route_layer_id;
@@ -355,17 +355,16 @@
       if (geoResponse && geoResponse.addresses
         && geoResponse.addresses[0].address.freeformAddress) {
         passengerMarker.remove();
-        passengerMarker = createPasssengerMarker(geoResponse.addresses[0].position,
+        passengerMarker = createPassengerMarker(geoResponse.addresses[0].position,
           new tt.Popup({ offset: 35 }).setHTML(geoResponse.addresses[0].address.freeformAddress));
         passengerMarker.togglePopup();
-        updateTaxiBatchLocations(passengerMarker.getLngLat().toArray());
       }
     }
 
-    function createPasssengerMarker(markerCoordinates, popup) {
+    function createPassengerMarker(markerCoordinates, popup) {
       const passengerMarkerElement = document.createElement('div');
       passengerMarkerElement.innerHTML = "<img src='img/man-waving-arm_32.png' style='width: 30px; height: 30px';>";
-      return new tt.Marker({element: passengerMarkerElement}).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
+      return new tt.Marker({ element: passengerMarkerElement }).setLngLat(markerCoordinates).setPopup(popup).addTo(map);
     }
 
     setDefaultTaxiConfig();
@@ -374,7 +373,7 @@
     tt.setProductInfo('Taxi dispatcher example application', '1.00');
 
     map.addControl(new tt.NavigationControl(), 'top-left');
-    passengerMarker = createPasssengerMarker(passengerInitCoordinates,
+    passengerMarker = createPassengerMarker(passengerInitCoordinates,
       new tt.Popup({ offset: 35 }).setHTML("Click anywhere on the map to change passenger location."));
     passengerMarker.togglePopup();
     taxiConfig.forEach(function (taxi) {
@@ -389,7 +388,10 @@
         key: apiKey,
         position: position
       })
-        .go().then(function (results) { drawPassengerMarkerOnMap(results); });
+        .go().then(function (results) {
+          drawPassengerMarkerOnMap(results);
+          updateTaxiBatchLocations(passengerMarker.getLngLat().toArray());
+        });
     });
 
     modal.addEventListener('click', function () {
