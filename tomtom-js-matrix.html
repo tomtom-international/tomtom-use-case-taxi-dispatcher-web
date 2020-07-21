@@ -4,9 +4,9 @@
 <head>
   <title>Taxi cars dispatcher</title>
   <meta charset="UTF-8">
-  <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.38.0/maps/maps.css'>
-  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.39.0/maps/maps-web.min.js"></script>
-  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/5.x/5.39.0/services/services-web.min.js"></script>
+  <link rel='stylesheet' type='text/css' href='https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.1.0/maps/maps.css'>
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.1.0/maps/maps-web.min.js"></script>
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.1.0/services/services-web.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -124,7 +124,6 @@
       key: apiKey,
       container: 'map',
       center: passengerInitCoordinates,
-      style: 'tomtom://vector/1/basic-main',
       zoom: zoomLevel
     });
 
@@ -254,8 +253,8 @@
           { locations: taxiPassengerBatchCoordinates[3] }
         ]
       })
-        .go().then(function (results) {
-          results.forEach(function (singleRoute, index) {
+        .then(function (results) {
+          results.batchItems.forEach(function (singleRoute, index) {
             const routeGeoJson = singleRoute.toGeoJson();
             const route = [];
             const route_background_layer_id = 'route_background_' + index;
@@ -324,10 +323,10 @@
       const travelTimeInSecondsArray = [];
       const lengthInMetersArray = [];
       const trafficDelayInSecondsArray = [];
-      result.forEach(function (child) {
-        travelTimeInSecondsArray.push(child[0].routeSummary.travelTimeInSeconds);
-        lengthInMetersArray.push(child[0].routeSummary.lengthInMeters);
-        trafficDelayInSecondsArray.push(child[0].routeSummary.trafficDelayInSeconds);
+      result.matrix.forEach(function (child) {
+        travelTimeInSecondsArray.push(child[0].response.routeSummary.travelTimeInSeconds);
+        lengthInMetersArray.push(child[0].response.routeSummary.lengthInMeters);
+        trafficDelayInSecondsArray.push(child[0].response.routeSummary.trafficDelayInSeconds);
       });
       modifyFastestRouteColor(travelTimeInSecondsArray);
       updateRouteLegend(travelTimeInSecondsArray, lengthInMetersArray, trafficDelayInSecondsArray);
@@ -343,7 +342,7 @@
         origins: origins,
         destinations: destinations,
         traffic: true
-      }).go().then(processMatrixResponse);
+      }).then(processMatrixResponse);
     }
 
     function submitButtonHandler() {
@@ -388,7 +387,7 @@
         key: apiKey,
         position: position
       })
-        .go().then(function (results) {
+        .then(function (results) {
           drawPassengerMarkerOnMap(results);
           updateTaxiBatchLocations(passengerMarker.getLngLat().toArray());
         });
